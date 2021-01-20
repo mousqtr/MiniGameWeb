@@ -27,6 +27,7 @@ const near = 45;
 const far = 30000;
 let camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 camera.position.set(0, -100, 100);
+camera.lookAt( 0, 0, 0 );
 
 // Renderer
 let renderer = new THREE.WebGLRenderer({antialias:true, canvas});
@@ -44,6 +45,11 @@ window.addEventListener( 'resize', onWindowResize, false );
 window.addEventListener( 'click', onClick, false );
 window.addEventListener( 'mousemove', onMouseMove, false );
 
+// Variables
+let walking = false;
+let a;
+let b;
+
 // When user click somewhere
 function onClick(event) {
     raycaster.setFromCamera( mouse, camera );
@@ -52,15 +58,20 @@ function onClick(event) {
         console.log(intersects[0].object.name);
         if (intersects[0].object.name = 'floor'){
             // console.log(intersects[i].point);
+
+            // Move the character
             circle.position.set(intersects[i].point.x, intersects[i].point.y, intersects[i].point.z + 1)
             let x1 = models["character"].position.x;
             let x2 = circle.position.x
             let y1 = models["character"].position.y
             let y2 = circle.position.y
             let angle = Math.atan2(y2 - y1, x2 - x1);
-            console.log(angle)
             models["character"].rotation.set(Math.PI/2, Math.PI, 0)
             models["character"].rotateY(angle - Math.PI/2)
+            walking = true;
+            a = x2 - x1;
+            b = y2 - y1;
+            circle.material.opacity = 1;
         }
     }
 }
@@ -80,7 +91,7 @@ stats.domElement.style.right = '0';
 stats.domElement.style.top = '0';
 
 // Control the camera manually
-let controls = new OrbitControls(camera, renderer.domElement );
+// let controls = new OrbitControls(camera, renderer.domElement );
 // controls.addEventListener('change', renderer);
 // controls.minDistance = 500;
 // controls.maxDistance = 4000;
@@ -124,7 +135,7 @@ scene.add( dirLight );
 
 // Floor
 let floorGeo = new THREE.PlaneGeometry(100, 100);
-let floorMat = new THREE.MeshPhongMaterial({color: 0x0000ff, opacity: 0.5, transparent: true} );
+let floorMat = new THREE.MeshPhongMaterial({color: 0x00ff00, opacity: 0.5, transparent: true} );
 let floor = new THREE.Mesh( floorGeo, floorMat );
 floor.name = 'floor'
 floor.traverse(child => {
@@ -132,6 +143,12 @@ floor.traverse(child => {
 } );
 floor.position.set(0, 0, 0)
 scene.add(floor);
+
+const edges = new THREE.EdgesGeometry( floorGeo );
+const lineMat = new THREE.LineBasicMaterial( { color: 0x000000, linewidth: 0.1 } )
+const line = new THREE.LineSegments( edges, lineMat );
+
+scene.add( line );
 
 // Character
 var models = {};
@@ -179,6 +196,7 @@ const circleMat = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
 const circle = new THREE.Mesh( circleGeo, circleMat );
 circle.position.set(0, 0, 1)
 circle.rotation.set(0, 0, 0)
+circle.material.transparent = true;
 scene.add( circle );
 
 // Keyboard input
@@ -214,28 +232,39 @@ function animate() {
 
     stats.update();
 
+
+    // Update mixers
+    const delta = clock.getDelta();
+    if ( mixers["idle"] ) mixers["idle"].update( delta );
+    if ( mixers["walk"] ) mixers["walk"].update( delta );
+
+
+    // Move the character
     if (models["character"] != undefined){
-        let x1 = models["character"].position.x;
-        let x2 = circle.position.x
-        let y1 = models["character"].position.y
-        let y2 = circle.position.y
-        let a = x2 - x1;
-        let b = y2 - y1;
-        let angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
 
-        if ((a != 0) && (b != 0)){
-            models["character"].position.set(models["character"].position.x + a/50, 
-            models["character"].position.y + b/50, 0)
+        if (walking){
+            let x1 = models["character"].position.x;
+            let x2 = circle.position.x
+            let y1 = models["character"].position.y
+            let y2 = circle.position.y
+            let c = x2 - x1;
+            let d = y2 - y1;
+
+            if ((Math.abs(c) > 0.3) || (Math.abs(d) > 0.3)){
+                models["character"].position.set(
+                    models["character"].position.x + a * 0.01, 
+                    models["character"].position.y + b * 0.01, 
+                    0)
+                    camera.position.set(models["character"].position.x, models["character"].position.y - 100, 100);
+                if ( actions["walk"] ) actions["walk"].play();
+                circle.material.opacity -= 0.01;
+            }else{
+                walking = false;
+                circle.position.set(circle.position.x, circle.position.y, -10000)
+            }
+        }else{
+            if ( actions["walk"] ) actions["walk"].stop();
         }
-
-        // let d = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
-        // if (d > 0.2){
-        //     xx += (d/10) * Math.cos(Math.atan(b/a));
-        //     yy += (d/10) * Math.sin(Math.atan(b/a));
-        //     models["character"].position.set(xx, yy, 0)
-        //     models["character"].rotation.set(0, Math.PI/2, Math.PI/2)
-        //     console.log(Math.atan(b/a))
-        // }
         
     }
 
@@ -253,10 +282,7 @@ function animate() {
     //     sphere2.position.set(sphere2.position.x - 0.5, sphere2.position.y, sphere2.position.z)
     // }
 
-    // Update mixers
-    const delta = clock.getDelta();
-    if ( mixers["idle"] ) mixers["idle"].update( delta );
-    if ( mixers["walk"] ) mixers["walk"].update( delta );
+
 
     renderer.render(scene,camera);
     
