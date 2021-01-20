@@ -53,6 +53,14 @@ function onClick(event) {
         if (intersects[0].object.name = 'floor'){
             // console.log(intersects[i].point);
             circle.position.set(intersects[i].point.x, intersects[i].point.y, intersects[i].point.z + 1)
+            let x1 = models["character"].position.x;
+            let x2 = circle.position.x
+            let y1 = models["character"].position.y
+            let y2 = circle.position.y
+            let angle = Math.atan2(y2 - y1, x2 - x1);
+            console.log(angle)
+            models["character"].rotation.set(Math.PI/2, Math.PI, 0)
+            models["character"].rotateY(angle - Math.PI/2)
         }
     }
 }
@@ -189,8 +197,12 @@ function onWindowResize(){
     renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
-animate();
 
+// function walk(){
+//     models["character"].position.set()
+// }
+
+animate();
 
 
 
@@ -201,6 +213,31 @@ function animate() {
     requestAnimationFrame(animate);
 
     stats.update();
+
+    if (models["character"] != undefined){
+        let x1 = models["character"].position.x;
+        let x2 = circle.position.x
+        let y1 = models["character"].position.y
+        let y2 = circle.position.y
+        let a = x2 - x1;
+        let b = y2 - y1;
+        let angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+        if ((a != 0) && (b != 0)){
+            models["character"].position.set(models["character"].position.x + a/50, 
+            models["character"].position.y + b/50, 0)
+        }
+
+        // let d = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
+        // if (d > 0.2){
+        //     xx += (d/10) * Math.cos(Math.atan(b/a));
+        //     yy += (d/10) * Math.sin(Math.atan(b/a));
+        //     models["character"].position.set(xx, yy, 0)
+        //     models["character"].rotation.set(0, Math.PI/2, Math.PI/2)
+        //     console.log(Math.atan(b/a))
+        // }
+        
+    }
 
     // let x1 = sphere1.position.x;
     // let y1 = sphere1.position.y;
