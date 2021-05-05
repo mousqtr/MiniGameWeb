@@ -91,19 +91,24 @@ stats.domElement.style.right = '0';
 stats.domElement.style.top = '0';
 
 // Control the camera manually
-// let controls = new OrbitControls(camera, renderer.domElement );
-// controls.addEventListener('change', renderer);
+let controls = new OrbitControls(camera, renderer.domElement );
+controls.addEventListener('change', renderer);
 // controls.minDistance = 500;
-// controls.maxDistance = 4000;
+controls.maxDistance = 4000;
+controls.enabled = false;
+controls.enablePan = false;
+controls.enableDamping = false;
+controls.enableRotate = false;
+controls.enableZoom = false;
 
 // Hemisphere Light
 const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x555555 );
-hemiLight.position.set(0, -200, 0);
+hemiLight.position.set(0, -10, 0);
 scene.add( hemiLight );
 
 // Directional Light
 const dirLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-dirLight.position.set(0, 0, 0);
+dirLight.position.set(0, -20, 0);
 dirLight.castShadow = true;
 dirLight.shadow.camera.top = 180;
 dirLight.shadow.camera.bottom = - 100;
@@ -145,21 +150,54 @@ floor.position.set(0, 0, 0)
 scene.add(floor);
 
 const edges = new THREE.EdgesGeometry( floorGeo );
-const lineMat = new THREE.LineBasicMaterial( { color: 0x000000, linewidth: 0.1 } )
+const lineMat = new THREE.LineBasicMaterial( { color: 0x000000, side:THREE.DoubleSide, linewidth: 0.1 } )
 const line = new THREE.LineSegments( edges, lineMat );
-
 scene.add( line );
+
+
+function createMenu(scene, camera){
+    let floorGeo = new THREE.PlaneGeometry(100, 100);
+    let floorMat = new THREE.MeshPhongMaterial({color: 0x00ff00, opacity: 0.5, transparent: true} );
+    let floor = new THREE.Mesh( floorGeo, floorMat );
+    floor.name = 'floor'
+    floor.traverse(child => {
+        child.name = "floor"
+    } );
+    floor.position.set(0, 0, 0)
+    scene.add(floor);
+
+}
+
+// // Wall
+// let wallGeo = new THREE.PlaneGeometry(100, 70);
+// let wallMat = new THREE.MeshPhongMaterial({color: 0x0000ff, side:THREE.DoubleSide, opacity: 0.5, transparent: true} );
+// let wall = new THREE.Mesh( wallGeo, wallMat );
+// wall.name = 'wall'
+// wall.traverse(child => {
+//     child.name = "wall"
+// } );
+
+// wall.position.set(50, 0, 35)
+// wall.rotation.set(Math.PI/2, Math.PI/2, 0)
+// scene.add(wall);
+
+// const edges = new THREE.EdgesGeometry( wall.geomm );
+// const lineMat = new THREE.LineBasicMaterial( { color: 0x000000, side:THREE.DoubleSide, linewidth: 0.1 } )
+// const line = new THREE.LineSegments( edges, lineMat );
+// scene.add( line );
+
+
 
 // Character
 var models = {};
 var mixers = {};
 var actions = {};
 const loaderCharacter = new FBXLoader();
-loaderCharacter.load('models/malcolm.fbx', (character) => {
+loaderCharacter.load('models/character.fbx', (character) => {
 
     // Load the model
-    character.scale.setScalar(0.1);
-    character.position.set(0, 0, 0)
+    character.scale.setScalar(0.2);
+    character.position.set(0, 0, -20)
     character.rotation.set(Math.PI/2, Math.PI, 0)
     character.traverse(child => {
         child.castShadow = true;
@@ -254,7 +292,7 @@ function animate() {
                 models["character"].position.set(
                     models["character"].position.x + a * 0.01, 
                     models["character"].position.y + b * 0.01, 
-                    0)
+                    models["character"].position.z)
                     camera.position.set(models["character"].position.x, models["character"].position.y - 100, 100);
                 if ( actions["walk"] ) actions["walk"].play();
                 circle.material.opacity -= 0.01;
